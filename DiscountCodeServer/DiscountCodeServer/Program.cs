@@ -1,38 +1,44 @@
 using DiscountCodeServer.Models;
 using DiscountCodeServer.Services;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Add DbContext with SQLite provider
+// 1. Basic Configuration
+builder.Configuration.AddJsonFile("appsettings.json", optional: false);
+
+// 2. Database
 builder.Services.AddDbContext<DatabaseContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 2. Add other services
-builder.Services.AddGrpc();
+// 3. gRPC Services
+builder.Services.AddGrpc(options => {
+    options.EnableDetailedErrors = true;
+    options.MaxReceiveMessageSize = 16 * 1024 * 1024; // 16MB
+});
+
+// 4. Kestrel Configuration (HTTP/2 without HTTPS)
+builder.WebHost.ConfigureKestrel(options => {
+    options.ListenLocalhost(5023, listenOptions => {
+        listenOptions.Protocols = HttpProtocols.Http2;
+    });
+});
 
 var app = builder.Build();
 
-// 3. Apply migrations - PROPER IMPLEMENTATION
+// 5. Database Migration
 using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
-
-    try
-    {
-        // Will create database if doesn't exist and apply all migrations
-        dbContext.Database.Migrate();
-        app.Logger.LogInformation("Database migrated successfully");
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogError(ex, "An error occurred while migrating the database");
-        throw; // Fail fast if migrations fail
-    }
+    var db = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
+    await db.Database.MigrateAsync();
 }
 
-// 4. Configure endpoints
+// 6. Endpoints
 app.MapGrpcService<DiscountService>();
-app.MapGet("/", () => "gRPC server is running. Use a gRPC client to connect.");
+app.MapGet("/", () => "gRPC Server is running. Use a gRPC client to connect.");
+app.MapGet("/health", () => "OK");
 
-app.Run();
+// 7. Startup
+Console.WriteLine("Server running on http://localhost:5023");
+await app.RunAsync();
