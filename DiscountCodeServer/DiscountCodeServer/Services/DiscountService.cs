@@ -69,23 +69,31 @@ namespace DiscountCodeServer.Services
             UseCodeRequest request,
             ServerCallContext context)
         {
+            _logger.LogInformation("UseCode request received for code: {Code}",
+        string.IsNullOrEmpty(request.Code) ? "NULL" : request.Code);
+
             try
             {
                 if (string.IsNullOrWhiteSpace(request.Code) || request.Code.Length is < 7 or > 8)
                 {
+                    _logger.LogWarning("Empty code received");
                     return new UseCodeResponse { Result = (UseCodeResponse.Types.ResultCode)2 }; // Invalid code format
                 }
 
+                _logger.LogDebug("Looking up code in database");
                 var discountCode = await _dbContext.DiscountCodes
                     .FirstOrDefaultAsync(d => d.Code == request.Code);
 
                 if (discountCode == null)
                 {
+                    _logger.LogWarning("Code not found: {Code}", request.Code);
                     return new UseCodeResponse { Result = (UseCodeResponse.Types.ResultCode)1 }; // Code not found
                 }
 
                 if (discountCode.IsUsed)
                 {
+                    _logger.LogWarning("Attempt to reuse code: {Code} (Originally used at {UsedAt})",
+                request.Code, (UseCodeResponse.Types.ResultCode)3);
                     return new UseCodeResponse { Result = (UseCodeResponse.Types.ResultCode)3 }; // Code already used
                 }
 
