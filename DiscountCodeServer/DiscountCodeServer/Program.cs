@@ -36,8 +36,6 @@ using (var scope = app.Services.CreateScope())
 
 // 6. Endpoints
 app.MapGrpcService<DiscountService>();
-app.MapGet("/", () => "gRPC Server is running. Use a gRPC client to connect.");
-app.MapGet("/health", () => "OK");
 
 // 7. Startup
 Console.WriteLine("Server running on http://localhost:5023");

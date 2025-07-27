@@ -8,18 +8,26 @@ service DiscountCodeService {
 }
 
 message GenerateRequest {
-  uint32 count = 1;
-  uint32 length = 2;
+  uint32 count = 1;  // ushort in C#
+  uint32 length = 2; // byte in C#
 }
 
 message GenerateResponse {
   bool result = 1;
+  repeated string codes = 2; // Add this to return generated codes
 }
 
 message UseCodeRequest {
-  string code = 1;
+  string code = 1; // max 8 chars
 }
 
 message UseCodeResponse {
-  uint32 result = 1;
+  enum ResultCode {
+    SUCCESS = 0;
+    NOT_FOUND = 1;
+    INVALID = 2;
+    ALREADY_USED = 3;
+    SERVER_ERROR = 4;
+  }
+  ResultCode result = 1;
 }

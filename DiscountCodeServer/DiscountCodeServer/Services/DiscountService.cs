@@ -73,7 +73,7 @@ namespace DiscountCodeServer.Services
             {
                 if (string.IsNullOrWhiteSpace(request.Code) || request.Code.Length is < 7 or > 8)
                 {
-                    return new UseCodeResponse { Result = 2 }; // Invalid code format
+                    return new UseCodeResponse { Result = (UseCodeResponse.Types.ResultCode)2 }; // Invalid code format
                 }
 
                 var discountCode = await _dbContext.DiscountCodes
@@ -81,12 +81,12 @@ namespace DiscountCodeServer.Services
 
                 if (discountCode == null)
                 {
-                    return new UseCodeResponse { Result = 1 }; // Code not found
+                    return new UseCodeResponse { Result = (UseCodeResponse.Types.ResultCode)1 }; // Code not found
                 }
 
                 if (discountCode.IsUsed)
                 {
-                    return new UseCodeResponse { Result = 3 }; // Code already used
+                    return new UseCodeResponse { Result = (UseCodeResponse.Types.ResultCode)3 }; // Code already used
                 }
 
                 discountCode.IsUsed = true;
@@ -98,7 +98,7 @@ namespace DiscountCodeServer.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error using code");
-                return new UseCodeResponse { Result = 4 }; // Server error
+                return new UseCodeResponse { Result = (UseCodeResponse.Types.ResultCode)4 }; // Server error
             }
         }
 
